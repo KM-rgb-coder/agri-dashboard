@@ -1211,8 +1211,8 @@ td{padding:7px 10px;vertical-align:middle;}
         <div class="card">
           <div class="ch"><div class="st"><span class="dot"></span> データ管理</div></div>
           <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-            <p style="font-size:11.5px;color:var(--tm);line-height:1.7;">全データはブラウザの localStorage に保存されています。</p>
-            <button class="bp danger" onclick="if(confirm('全データを初期化しますか？元に戻せません。'))resetAllData();" style="max-width:200px;font-size:11.5px;padding:7px 14px;">🗑 全データをリセット</button>
+            <p style="font-size:11.5px;color:var(--tm);line-height:1.7;">全データは <strong>Firebase</strong>（クラウド）に保存されています。家族全員で共有されます。</p>
+            <button class="bp danger" onclick="if(confirm('全データを初期化しますか？\nFirebase上のデータも削除され、家族全員のデータが消えます。\nこの操作は元に戻せません。'))resetAllData();" style="max-width:200px;font-size:11.5px;padding:7px 14px;">🗑 全データをリセット</button>
           </div>
         </div>
         <div class="card">
@@ -1573,43 +1573,12 @@ const DEFAULT_ACCOUNTS = [
   {id:'a23',type:'expense', name:'減価償却費',      desc:'取得価格が10万円以上の農業用建物、機械、車両などの償却費用。'},
 ];
 
-// ── Demo data ──
-const DEMO_CUSTOMERS = [
-  {id:1,name:"山田農産㈱",type:"法人",cat1:"農産物生産",cat2:"穀物・豆類",cat3:"米",tel:"096-111-2222",email:"yamada@farm.jp",lastDate:"2025-05-10",status:"VIP",crop:"rice",note:"大口・コシヒカリ"},
-  {id:2,name:"梅の香農園", type:"個人",cat1:"農産物生産",cat2:"果樹",cat3:"その他果樹",tel:"0965-77-8888",email:"ume@kaori.jp",lastDate:"2025-05-01",status:"取引中",crop:"ume",note:"南高梅専門"},
-  {id:3,name:"熊本米穀㈱", type:"法人",cat1:"流通・販売",cat2:"卸売・仲卸",cat3:"農産物卸",tel:"096-222-3333",email:"kome@kumamoto.jp",lastDate:"2025-05-12",status:"VIP",crop:"rice",note:"大口米取引"},
-  {id:4,name:"鈴木青果店", type:"個人",cat1:"流通・販売",cat2:"小売",cat3:"直売所",tel:"090-3333-4444",email:"suzuki@seika.jp",lastDate:"2025-04-28",status:"要フォロー",crop:"",note:""},
-];
-const DEMO_TRANSACTIONS = [
-  {id:1,type:'income', date:'2025-03-20',acct:'a1', amount:980000,  crop:'rice',custId:3,    desc:'コシヒカリ春出荷'},
-  {id:2,type:'income', date:'2025-06-10',acct:'a2', amount:780000,  crop:'ume', custId:2,    desc:'南高梅出荷'},
-  {id:3,type:'expense',date:'2025-03-05',acct:'a10',amount:85000,   crop:'rice',custId:null, desc:'春まき肥料（化成肥料）'},
-  {id:4,type:'expense',date:'2025-01-15',acct:'a13',amount:65000,   crop:'ume', custId:null, desc:'梅農薬衛生費'},
-  {id:5,type:'income', date:'2025-09-15',acct:'a1', amount:2100000, crop:'rice',custId:1,    desc:'コシヒカリ本出荷'},
-  {id:6,type:'expense',date:'2025-05-08',acct:'a10',amount:42000,   crop:'rice',custId:null, desc:'追肥（5月・液肥）'},
-  {id:7,type:'income', date:'2025-10-20',acct:'a3', amount:260000,  crop:'ume', custId:2,    desc:'梅干し納品'},
-  {id:8,type:'expense',date:'2025-10-12',acct:'a10',amount:38000,   crop:'ume', custId:null, desc:'梅肥料（秋施肥・堆肥）'},
-];
-const DEMO_FIELDS = [
-  {id:'f1',name:'第1圃場',crop:'rice',variety:'コシヒカリ',area:18,areaUnit:'a',loc:'○○市北地区',own:'own'},
-  {id:'f2',name:'第2圃場',crop:'rice',variety:'ヒノヒカリ',area:12,areaUnit:'a',loc:'○○市北地区',own:'rent'},
-  {id:'f3',name:'梅園A',  crop:'ume', variety:'南高梅',    area:8, areaUnit:'a',loc:'○○市南地区',own:'own'},
-  {id:'f4',name:'梅園B',  crop:'ume', variety:'古城梅',    area:5, areaUnit:'a',loc:'○○市南地区',own:'rent'},
-];
-const DEMO_PEST = [
-  {id:'p1',date:'2025-02-10',fieldId:'f3',crop:'ume', chem:'ベフラン液剤25',dilute:'1000倍',amount:'水200L',person:'山田',note:'アブラムシ防除',txId:null},
-  {id:'p2',date:'2025-05-06',fieldId:'f3',crop:'ume', chem:'スタークル顆粒水溶剤',dilute:'2000倍',amount:'水100L',person:'山田',note:'カイガラムシ防除',txId:null},
-  {id:'p3',date:'2025-05-12',fieldId:'f1',crop:'rice',chem:'ジャンボ剤（除草剤）',dilute:'そのまま',amount:'1袋/10a',person:'田中',note:'代かき後7日',txId:null},
-  {id:'p4',date:'2025-06-15',fieldId:'f1',crop:'rice',chem:'キタジン乳剤',dilute:'800倍',amount:'水150L',person:'山田',note:'いもち病予防',txId:null},
-  {id:'p5',date:'2025-07-20',fieldId:'f2',crop:'rice',chem:'トレボン乳剤',dilute:'1000倍',amount:'水200L',person:'田中',note:'カメムシ防除',txId:null},
-];
-const DEMO_HARVESTS = [
-  {id:'h1',date:'2024-09-18',fieldId:'f1',qty:4200,unit:'kg',person:'山田',note:'品質A・天候良好',txId:null},
-  {id:'h2',date:'2024-09-22',fieldId:'f2',qty:2800,unit:'kg',person:'田中',note:'一部倒伏あり',  txId:null},
-  {id:'h3',date:'2024-06-20',fieldId:'f3',qty:1200,unit:'kg',person:'山田',note:'南高梅・上出来', txId:null},
-  {id:'h4',date:'2025-09-15',fieldId:'f1',qty:4500,unit:'kg',person:'山田',note:'コシヒカリ本出荷',txId:5},
-  {id:'h5',date:'2025-06-18',fieldId:'f3',qty:1350,unit:'kg',person:'山田',note:'南高梅今年分',   txId:null},
-];
+// ── Demo data（初期値は空：Firebaseにデータがない場合も空から始める） ──
+const DEMO_CUSTOMERS    = [];
+const DEMO_TRANSACTIONS = [];
+const DEMO_FIELDS       = [];
+const DEMO_PEST         = [];
+const DEMO_HARVESTS     = [];
 
 // ── Load or init（Firebase接続前の初期値、subscribeDataで上書きされる） ──
 let accounts     = DEFAULT_ACCOUNTS;
