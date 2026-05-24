@@ -54,6 +54,32 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getDatabase, ref, set, onValue, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                                                  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBhC5e9hZep7upU4-GsVW7kIVwW6SmT2dM",
+    authDomain:        "agricrm-6f4de.firebaseapp.com",
+    databaseURL:       "https://agricrm-6f4de-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "agricrm-6f4de",
+    storageBucket:     "agricrm-6f4de.firebasestorage.app",
+    messagingSenderId: "248799693862",
+    appId:             "1:248799693862:web:6c038ea9e1c12080636ae7"
+  };
+
+  const app      = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+  const auth     = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // グローバルに公開（通常スクリプトから使えるように）
+  window.__fb = { database, auth, provider, ref, set, onValue, off, signInWithPopup, signOut, onAuthStateChanged };
+</script>
 <style>
 :root{
   --gd:#1a3a2a;--gm:#2d6a4f;--ga:#40916c;--gl:#74c69d;
@@ -708,12 +734,70 @@ td{padding:7px 10px;vertical-align:middle;}
 </head>
 <body>
 
-<!-- ═══ Sidebar ═══ -->
+<!-- ═══ ログイン画面 ═══ -->
+<div id="loginScreen" style="
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:var(--gd);
+  font-family:'Noto Sans JP',sans-serif;
+">
+  <div style="
+    background:#fff;border-radius:20px;padding:40px 36px;
+    max-width:360px;width:90%;text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+  ">
+    <div style="font-size:52px;margin-bottom:12px;">🌾</div>
+    <div style="font-size:22px;font-weight:700;color:var(--gd);margin-bottom:6px;">AgriCRM</div>
+    <div style="font-size:13px;color:var(--tl);margin-bottom:28px;">農業経営管理システム</div>
+    <div style="font-size:13px;color:var(--tm);margin-bottom:20px;line-height:1.7;background:var(--cream);border-radius:10px;padding:12px 16px;">
+      家族でデータを共有するには<br>Googleアカウントでログインしてください
+    </div>
+    <button id="loginBtn" onclick="doLogin()" style="
+      width:100%;padding:14px;border-radius:12px;border:none;
+      background:#fff;color:#333;font-size:15px;font-weight:700;
+      cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,.15);transition:box-shadow .2s;
+    ">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Googleでログイン
+    </button>
+    <div id="loginError" style="display:none;margin-top:14px;font-size:12px;color:var(--red);background:#fee2e2;border-radius:8px;padding:10px;"></div>
+    <div style="margin-top:20px;font-size:11px;color:var(--tl);line-height:1.6;">
+      登録済みのGoogleアカウントのみ<br>アクセスできます
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ローディング画面 ═══ -->
+<div id="loadingScreen" style="
+  display:none;position:fixed;inset:0;background:var(--gd);
+  align-items:center;justify-content:center;z-index:9999;
+  font-family:'Noto Sans JP',sans-serif;flex-direction:column;gap:16px;
+">
+  <div style="font-size:48px;">🌾</div>
+  <div style="color:var(--gl);font-size:14px;font-weight:600;">データを同期中...</div>
+  <div style="width:48px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;">
+    <div style="height:100%;background:var(--gl);border-radius:2px;animation:ldbar 1.2s ease-in-out infinite;"></div>
+  </div>
+  <style>@keyframes ldbar{0%{width:0%;margin-left:0}50%{width:80%;margin-left:10%}100%{width:0%;margin-left:100%}}</style>
+</div>
+
+<!-- ═══ メインアプリ（ログイン後に表示） ═══ -->
+<div id="appRoot" style="display:none;">
 <nav id="sb">
   <div class="sb-logo">
     <div style="font-size:20px;margin-bottom:4px;">🌾</div>
     <div class="an">AgriCRM</div>
     <div class="sub">農業経営管理システム v7</div>
+  </div>
+  <!-- ログインユーザー情報 -->
+  <div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;">
+    <img id="sbUserPhoto" src="" alt="" width="28" height="28" style="border-radius:50%;display:none;object-fit:cover;">
+    <div style="flex:1;min-width:0;">
+      <div id="sbUserName" style="font-size:11px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+      <div style="font-size:9px;color:rgba(255,255,255,.4);">🔄 リアルタイム同期中</div>
+    </div>
+    <button onclick="doLogout()" style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.55);border-radius:6px;padding:3px 7px;cursor:pointer;font-size:10px;font-family:'Noto Sans JP',sans-serif;">ログアウト</button>
   </div>
   <div style="padding:6px 0 0;">
     <div class="nav-sec">品目フェーズ</div>
@@ -1348,39 +1432,117 @@ td{padding:7px 10px;vertical-align:middle;}
 </div>
 
 <div id="toast"></div>
+</div><!-- /appRoot -->
 
 <script>
 'use strict';
+// ════════════════════════════════════════════
+//  FIREBASE 認証・データ同期
+// ════════════════════════════════════════════
+let _db=null, _auth=null, _uid=null, _fbRef=null, _fbListener=null;
+
+// Firebase モジュールが読み込まれるまで待つ
+function waitForFb(cb, retry=0){
+  if(window.__fb){ _db=window.__fb.database; _auth=window.__fb.auth; cb(); }
+  else if(retry<50){ setTimeout(()=>waitForFb(cb,retry+1), 100); }
+  else { console.error('[AgriCRM] Firebase load timeout'); }
+}
+
+function doLogin(){
+  const btn=document.getElementById('loginBtn');
+  const errEl=document.getElementById('loginError');
+  btn.textContent='ログイン中...'; btn.disabled=true;
+  errEl.style.display='none';
+  waitForFb(()=>{
+    const{signInWithPopup,provider,auth}=window.__fb;
+    signInWithPopup(auth,provider).catch(err=>{
+      btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Googleでログイン';
+      btn.disabled=false;
+      errEl.style.display='block';
+      errEl.textContent='ログインに失敗しました。もう一度お試しください。';
+    });
+  });
+}
+
+function doLogout(){
+  if(!confirm('ログアウトしますか？'))return;
+  if(_fbListener && _fbRef){ window.__fb.off(_fbRef,'value',_fbListener); }
+  window.__fb.signOut(window.__fb.auth).then(()=>{
+    document.getElementById('appRoot').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+  });
+}
+
+function showLoading(v){
+  const el=document.getElementById('loadingScreen');
+  el.style.display=v?'flex':'none';
+}
+
+// ── データ保存（Firebase へ書き込み） ──
+function saveData(){
+  if(!_db||!_uid) return;
+  const{ref,set}=window.__fb;
+  const payload={accounts,customers,transactions,fields,pestRecords,harvests,_updatedAt:Date.now()};
+  set(ref(_db,`users/${_uid}/data`), payload)
+    .catch(err=>console.error('[AgriCRM] saveData error:',err));
+  // ローカルにもキャッシュ（オフライン対応）
+  try{ localStorage.setItem('agricrm_v7_cache', JSON.stringify(payload)); }catch(e){}
+}
+
+// ── データ読み込み（Firebase からリアルタイム受信） ──
+function subscribeData(uid){
+  const{ref,onValue,off}=window.__fb;
+  _uid=uid;
+  _fbRef=ref(_db,`users/${uid}/data`);
+  // 既存リスナー解除
+  if(_fbListener){ off(_fbRef,'value',_fbListener); }
+  showLoading(true);
+
+  _fbListener=onValue(_fbRef, snapshot=>{
+    const remote=snapshot.val();
+    if(remote){
+      // Firebaseのデータで上書き
+      accounts     = remote.accounts     || DEFAULT_ACCOUNTS;
+      customers    = remote.customers    || DEMO_CUSTOMERS;
+      transactions = remote.transactions || DEMO_TRANSACTIONS;
+      fields       = remote.fields       || DEMO_FIELDS;
+      pestRecords  = remote.pestRecords  || DEMO_PEST;
+      harvests     = remote.harvests     || DEMO_HARVESTS;
+      nC   = Math.max(...customers.map(c=>typeof c.id==='number'?c.id:0),0)+1;
+      nTx  = Math.max(...transactions.map(t=>t.id),0)+1;
+    } else {
+      // 初回：ローカルキャッシュがあれば移行、なければデモデータ
+      const cache=loadLocalCache();
+      if(cache){
+        ({accounts,customers,transactions,fields,pestRecords,harvests}=cache);
+        saveData(); // Firebaseに初回書き込み
+      }
+    }
+    showLoading(false);
+    // UIを更新
+    try{ updateAllKPI(); renderPestAlert(); renderFieldProfitTable(); }catch(e){}
+  }, err=>{
+    console.error('[AgriCRM] DB read error:',err);
+    showLoading(false);
+    toast('データの読み込みに失敗しました。オフラインキャッシュを使用します。',1);
+    const cache=loadLocalCache();
+    if(cache){ ({accounts,customers,transactions,fields,pestRecords,harvests}=cache); }
+  });
+}
+
+function loadLocalCache(){
+  try{
+    const raw=localStorage.getItem('agricrm_v7_cache')
+           || localStorage.getItem('agricrm_v7');
+    return raw?JSON.parse(raw):null;
+  }catch(e){ return null; }
+}
+
 // ════════════════════════════════════════════
 //  UNIFIED DATA MODEL
 // ════════════════════════════════════════════
 // One JSON object in localStorage: agricrm_v7
 // Structure: { accounts, customers, transactions, fields, pestRecords, harvests }
-
-const STORAGE_KEY = 'agricrm_v7';
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
-  return null;
-}
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    accounts, customers, transactions, fields, pestRecords, harvests
-  }));
-}
-function migrateOldData() {
-  // Try to import from v5 separate keys
-  const oldC   = JSON.parse(localStorage.getItem('agricrm_v5_c')||'null');
-  const oldTx  = JSON.parse(localStorage.getItem('agricrm_v5_tx')||'null');
-  const oldAct = JSON.parse(localStorage.getItem('agricrm_v5_acct')||'null');
-  const oldP   = JSON.parse(localStorage.getItem('agricrm_v5_pest')||'null');
-  const oldF   = JSON.parse(localStorage.getItem('agricrm_v5_fields')||'null');
-  const oldH   = JSON.parse(localStorage.getItem('agricrm_v5_harvests')||'null');
-  return { oldC, oldTx, oldAct, oldP, oldF, oldH };
-}
 
 // ── Default Accounts ──
 const DEFAULT_ACCOUNTS = [
@@ -1449,28 +1611,15 @@ const DEMO_HARVESTS = [
   {id:'h5',date:'2025-06-18',fieldId:'f3',qty:1350,unit:'kg',person:'山田',note:'南高梅今年分',   txId:null},
 ];
 
-// ── Load or init ──
-let db = loadData();
-if (!db) {
-  const old = migrateOldData();
-  db = {
-    accounts:     old.oldAct || DEFAULT_ACCOUNTS,
-    customers:    old.oldC   || DEMO_CUSTOMERS,
-    transactions: old.oldTx  || DEMO_TRANSACTIONS,
-    fields:       old.oldF   || DEMO_FIELDS,
-    pestRecords:  old.oldP   || DEMO_PEST,
-    harvests:     old.oldH   || DEMO_HARVESTS,
-  };
-}
+// ── Load or init（Firebase接続前の初期値、subscribeDataで上書きされる） ──
+let accounts     = DEFAULT_ACCOUNTS;
+let customers    = DEMO_CUSTOMERS;
+let transactions = DEMO_TRANSACTIONS;
+let fields       = DEMO_FIELDS;
+let pestRecords  = DEMO_PEST;
+let harvests     = DEMO_HARVESTS;
 
-let accounts     = db.accounts;
-let customers    = db.customers;
-let transactions = db.transactions;
-let fields       = db.fields;
-let pestRecords  = db.pestRecords;
-let harvests     = db.harvests;
-
-let nC  = Math.max(...customers.map(c=>typeof c.id==='number'?c.id:0),0)+1;
+let nC  = Math.max(...customers.map(c=>c.id),0)+1;
 let nTx = Math.max(...transactions.map(t=>t.id),0)+1;
 
 // ID generators
@@ -2579,9 +2728,22 @@ function delAcct(id){
 //  RESET
 // ════════════════════════════════════════════
 function resetAllData(){
-  localStorage.removeItem(STORAGE_KEY);
-  ['agricrm_v5_c','agricrm_v5_tx','agricrm_v5_acct','agricrm_v5_pest','agricrm_v5_fields','agricrm_v5_harvests'].forEach(k=>localStorage.removeItem(k));
-  location.reload();
+  if(!confirm('全データをリセットしますか？\nFirebase上のデータも削除されます。この操作は元に戻せません。')) return;
+  // Firebaseのデータを削除
+  if(_db && _uid){
+    const{ref,set}=window.__fb;
+    set(ref(_db,`users/${_uid}/data`), null).then(()=>{
+      // ローカルキャッシュも削除
+      ['agricrm_v7_cache','agricrm_v7',
+       'agricrm_v5_c','agricrm_v5_tx','agricrm_v5_acct',
+       'agricrm_v5_pest','agricrm_v5_fields','agricrm_v5_harvests'
+      ].forEach(k=>localStorage.removeItem(k));
+      location.reload();
+    }).catch(err=>{ toast('リセットに失敗しました: '+err.message, 1); });
+  } else {
+    ['agricrm_v7_cache','agricrm_v7'].forEach(k=>localStorage.removeItem(k));
+    location.reload();
+  }
 }
 
 // ════════════════════════════════════════════
@@ -2823,14 +2985,7 @@ function initBanner(){
 // ════════════════════════════════════════════
 function init(){
   const td=today();
-  const dateEl=document.getElementById('currentDate');
-  if(dateEl)dateEl.textContent=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
   ['tx-date','p-date','h-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=td;});
-
-  buildCalendar();
-  updateAllKPI();
-  renderPestAlert();
-  renderFieldProfitTable();
 
   // サイドバー nav リスナー
   document.querySelectorAll('.nav-i[data-page]').forEach(nav=>{
@@ -2846,50 +3001,68 @@ function init(){
     if(fabOpen){
       const fab=document.getElementById('fab');
       const menu=document.getElementById('fabMenu');
-      if(fab&&menu&&!fab.contains(e.target)&&!menu.contains(e.target)){
-        closeFab();
-      }
+      if(fab&&menu&&!fab.contains(e.target)&&!menu.contains(e.target)) closeFab();
     }
   });
 
-  // ── URLパラメータによる初期ページ遷移 ──
-  // ショートカット: /?page=fields などで直接ページを開く
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const initPage = params.get('page');
-    if (initPage && PAGE_TITLES[initPage]) {
-      navigateTo(initPage);
-    }
-  } catch(e) {}
+  // URLパラメータによる初期ページ遷移
+  try{
+    const p=new URLSearchParams(window.location.search).get('page');
+    if(p&&PAGE_TITLES[p]) navigateTo(p);
+  }catch(e){}
 
-  // ── Service Worker 登録 ──
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+  // ── Firebase 認証リスナー ──
+  waitForFb(()=>{
+    const{onAuthStateChanged,auth}=window.__fb;
+    onAuthStateChanged(auth, user=>{
+      if(user){
+        // ログイン済み → アプリ表示
+        _db=window.__fb.database;
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('appRoot').style.display='block';
+
+        // ユーザー情報をサイドバーに表示
+        const nameEl=document.getElementById('sbUserName');
+        const photoEl=document.getElementById('sbUserPhoto');
+        if(nameEl) nameEl.textContent=user.displayName||user.email||'ログイン中';
+        if(photoEl&&user.photoURL){ photoEl.src=user.photoURL; photoEl.style.display='block'; }
+
+        // カレンダー・UIの初期化
+        buildCalendar();
+        syncBottomNav('dashboard');
+
+        // Firebaseからデータ購読開始
+        subscribeData(user.uid);
+
+        // トップバー日付
+        const dateEl=document.getElementById('currentDate');
+        if(dateEl) dateEl.textContent=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+
+      } else {
+        // 未ログイン → ログイン画面
+        if(_fbListener&&_fbRef){ window.__fb.off(_fbRef,'value',_fbListener); }
+        document.getElementById('loginScreen').style.display='flex';
+        document.getElementById('appRoot').style.display='none';
+        showLoading(false);
+      }
+    });
+  });
+
+  // Service Worker 登録
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
       navigator.serviceWorker.register('/sw.js')
-        .then(reg => {
-          console.log('[AgriCRM] Service Worker registered. Scope:', reg.scope);
-
-          // 新しいバージョンが待機中なら更新バナーを表示
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                showUpdateBanner(newWorker);
-              }
+        .then(reg=>{
+          reg.addEventListener('updatefound',()=>{
+            const nw=reg.installing;
+            nw.addEventListener('statechange',()=>{
+              if(nw.state==='installed'&&navigator.serviceWorker.controller) showUpdateBanner(nw);
             });
           });
-        })
-        .catch(err => {
-          console.warn('[AgriCRM] Service Worker registration failed:', err);
-        });
-
-      // コントローラー変更時にリロード（新バージョン適用）
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
+        }).catch(err=>console.warn('[AgriCRM] SW registration failed:',err));
+      let refreshing=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(!refreshing){ refreshing=true; window.location.reload(); }
       });
     });
   }
