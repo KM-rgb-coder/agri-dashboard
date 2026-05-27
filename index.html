@@ -1591,7 +1591,7 @@ function saveData(){
   if(!_db||!_uid) return;
   const{ref,set}=window.__fb;
   const payload={accounts,customers,transactions,fields,pestRecords,harvests,_updatedAt:Date.now()};
-  set(ref(_db,`users/${_uid}/data`), payload)
+  set(ref(_db,`family/data`), payload)
     .catch(err=>console.error('[AgriCRM] saveData error:',err));
   // ローカルにもキャッシュ（オフライン対応）
   try{ localStorage.setItem('agricrm_v7_cache', JSON.stringify(payload)); }catch(e){}
@@ -1601,7 +1601,8 @@ function saveData(){
 function subscribeData(uid){
   const{ref,onValue,off}=window.__fb;
   _uid=uid;
-  _fbRef=ref(_db,`users/${uid}/data`);
+  // 家族全員で同じデータを共有する固定パス
+  _fbRef=ref(_db,'family/data');
   // 既存リスナー解除
   if(_fbListener){ off(_fbRef,'value',_fbListener); }
   showLoading(true);
@@ -2984,7 +2985,7 @@ function resetAllData(){
   // Firebaseのデータを削除
   if(_db && _uid){
     const{ref,set}=window.__fb;
-    set(ref(_db,`users/${_uid}/data`), null).then(()=>{
+    set(ref(_db,`family/data`), null).then(()=>{
       // ローカルキャッシュも削除
       ['agricrm_v7_cache','agricrm_v7',
        'agricrm_v5_c','agricrm_v5_tx','agricrm_v5_acct',
