@@ -599,19 +599,21 @@ td{padding:7px 10px;vertical-align:middle;}
   padding-bottom:constant(safe-area-inset-bottom);
 }
 .bn-inner{
-  display:flex;height:64px;align-items:stretch;
+  display:flex;height:64px;align-items:stretch;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
 }
+.bn-inner::-webkit-scrollbar{display:none;}
 .bn-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;border:none;background:none;cursor:pointer;
-  color:var(--tl);font-size:9.5px;font-weight:600;
+  flex:1;min-width:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;border:none;background:none;cursor:pointer;
+  color:var(--tl);font-size:9px;font-weight:600;
   font-family:'Noto Sans JP',sans-serif;
-  padding:6px 4px;transition:color .14s;
+  padding:5px 3px;transition:color .14s;
   -webkit-tap-highlight-color:transparent;
   min-width:0;
 }
 .bn-item:active{background:rgba(0,0,0,.04);}
-.bn-icon{font-size:22px;line-height:1;margin-bottom:1px;}
+.bn-icon{font-size:20px;line-height:1;margin-bottom:1px;}
 .bn-item.act{color:var(--gm);}
 .bn-item.act .bn-icon{filter:drop-shadow(0 0 3px rgba(45,106,79,.3));}
 .bn-item.rec-btn{color:var(--inc);}
@@ -749,6 +751,17 @@ td{padding:7px 10px;vertical-align:middle;}
   tbody tr{border-bottom:1.5px solid var(--cd);}
   /* sl (section label) */
   .sl{font-size:12px;letter-spacing:.12em;margin-top:4px;}
+
+  /* 設定ページ */
+  .settings-bottom-grid{grid-template-columns:1fr!important;}
+
+  /* 勘定科目リスト行：スマホで折り返し */
+  .acct-row{flex-wrap:wrap;gap:6px;padding:12px 0;}
+  .acct-name{font-size:14px;flex-basis:100%;order:2;}
+  .acct-desc{font-size:12px;color:var(--tl);flex-basis:100%;order:3;}
+  .acct-type{order:1;font-size:11px;}
+  .acct-actions{order:4;margin-left:auto;}
+  .icon-btn{min-width:40px;min-height:40px;font-size:18px;}
 }
 </style>
 </head>
@@ -1301,33 +1314,60 @@ td{padding:7px 10px;vertical-align:middle;}
   <!-- ════ PAGE: 設定 ════ -->
   <div class="page" id="page-settings">
     <div class="sl" style="margin-bottom:14px;">設定</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
-      <div class="card">
-        <div class="ch"><div class="st"><span class="dot"></span> 勘定科目管理</div></div>
-        <div style="padding:13px 16px;">
-          <p style="font-size:11.5px;color:var(--tl);margin-bottom:11px;">科目の追加・編集・削除ができます。変更は取引フォームに即時反映されます。</p>
-          <div style="display:grid;grid-template-columns:64px 1fr 1fr auto;gap:7px;align-items:end;margin-bottom:12px;">
-            <div class="fg-g"><label>種類</label><select id="newAcctType" style="font-size:11.5px;padding:5px 7px;"><option value="income">収入</option><option value="expense">経費</option></select></div>
-            <div class="fg-g"><label>科目名</label><input type="text" id="newAcctName" placeholder="例：水道光熱費" style="font-size:11.5px;" /></div>
-            <div class="fg-g"><label>説明</label><input type="text" id="newAcctDesc" placeholder="例：農場の水道・電気代" style="font-size:11.5px;" /></div>
-            <button class="bp" onclick="addAccount()" style="padding:6px 12px;font-size:11.5px;">追加</button>
+
+    <!-- 勘定科目管理（全幅） -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="ch"><div class="st"><span class="dot"></span> 勘定科目管理</div></div>
+      <div style="padding:13px 16px 16px;">
+        <p style="font-size:12px;color:var(--tl);margin-bottom:12px;line-height:1.6;">科目の追加・編集・削除ができます。変更は取引フォームに即時反映されます。</p>
+        <!-- 追加フォーム：スマホで縦積み -->
+        <div style="background:var(--cream);border-radius:9px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:9px;">＋ 新しい科目を追加</div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;gap:8px;">
+              <div class="fg-g" style="width:90px;flex-shrink:0;">
+                <label>種類</label>
+                <select id="newAcctType" style="font-size:14px;padding:8px 7px;width:100%;">
+                  <option value="income">収入</option>
+                  <option value="expense">経費</option>
+                </select>
+              </div>
+              <div class="fg-g" style="flex:1;">
+                <label>科目名 *</label>
+                <input type="text" id="newAcctName" placeholder="例：水道光熱費" style="font-size:14px;width:100%;" />
+              </div>
+            </div>
+            <div class="fg-g">
+              <label>説明</label>
+              <input type="text" id="newAcctDesc" placeholder="例：農場の水道・電気代" style="font-size:14px;width:100%;" />
+            </div>
+            <button class="bp" onclick="addAccount()" style="width:100%;font-size:14px;padding:10px;">＋ 追加する</button>
           </div>
-          <div id="acctList" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+        <!-- 科目一覧 -->
+        <div id="acctList" style="max-height:480px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <!-- データ管理 + アプリについて（スマホ: 縦積み、PC: 2カラム） -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;" class="settings-bottom-grid">
+      <div class="card">
+        <div class="ch"><div class="st"><span class="dot"></span> データ管理</div></div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="background:var(--inc-l);border-radius:8px;padding:10px 13px;font-size:12px;color:#166534;line-height:1.6;">
+            ☁️ 全データは <strong>Firebase</strong>（クラウド）に保存されています。家族全員で共有されます。
+          </div>
+          <button class="bp danger" onclick="if(confirm('全データを初期化しますか？\nFirebase上のデータも削除され、家族全員のデータが消えます。\nこの操作は元に戻せません。'))resetAllData();" style="width:100%;font-size:13px;padding:10px;">🗑 全データをリセット</button>
         </div>
       </div>
-      <div>
-        <div class="card">
-          <div class="ch"><div class="st"><span class="dot"></span> データ管理</div></div>
-          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-            <p style="font-size:11.5px;color:var(--tm);line-height:1.7;">全データは <strong>Firebase</strong>（クラウド）に保存されています。家族全員で共有されます。</p>
-            <button class="bp danger" onclick="if(confirm('全データを初期化しますか？\nFirebase上のデータも削除され、家族全員のデータが消えます。\nこの操作は元に戻せません。'))resetAllData();" style="max-width:200px;font-size:11.5px;padding:7px 14px;">🗑 全データをリセット</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ch"><div class="st"><span class="dot"></span> このアプリについて</div></div>
-          <div style="padding:14px 16px;font-size:11.5px;color:var(--tm);line-height:1.8;">
-            <p><strong>農業経営 CRM v7</strong></p>
-            <p style="color:var(--tl);">得意先・取引（収入/経費）・圃場管理・栽培履歴（防除/収穫）・品目別収支・作業カレンダーを一元管理します。</p>
+      <div class="card">
+        <div class="ch"><div class="st"><span class="dot"></span> このアプリについて</div></div>
+        <div style="padding:14px 16px;font-size:12px;color:var(--tm);line-height:1.8;">
+          <p style="font-weight:700;color:var(--gd);margin-bottom:6px;">🌾 農業経営 CRM v7</p>
+          <p style="color:var(--tl);">得意先・収支・圃場管理・栽培履歴・防除/収穫記録・品目別収支・月別集計を一元管理します。</p>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);font-size:11px;color:var(--tl);">
+            <div>Firebase Realtime Database 連携</div>
+            <div>家族間リアルタイム同期対応</div>
           </div>
         </div>
       </div>
@@ -1377,6 +1417,57 @@ td{padding:7px 10px;vertical-align:middle;}
 .ct.su{border-color:var(--ume);background:var(--ume-l);color:var(--ume-d);}
 </style>
 
+<!-- 防除記録 編集モーダル -->
+<div class="cust-modal-overlay hidden" id="pestEditModal" onclick="if(event.target===this)closePestEditModal()">
+  <div class="cust-modal-box">
+    <div class="cust-modal-hd" style="background:#92400e;">
+      <div class="cust-modal-hd-title">🌿 防除記録を編集</div>
+      <button class="cust-modal-close" onclick="closePestEditModal()">✕</button>
+    </div>
+    <div style="padding:16px 18px;">
+      <div class="fg">
+        <div class="fg-g"><label>日付 *</label><input type="date" id="pe-date"/></div>
+        <div class="fg-g"><label>使用薬剤名 *</label><input type="text" id="pe-chem" placeholder="スタークル顆粒水溶剤"/></div>
+        <div class="fg-g"><label>希釈倍率</label><input type="text" id="pe-dilute" placeholder="2000倍"/></div>
+        <div class="fg-g"><label>使用量</label><input type="text" id="pe-amount" placeholder="水100L・薬剤50g"/></div>
+        <div class="fg-g"><label>担当者</label><input type="text" id="pe-person" placeholder="山田"/></div>
+        <div class="fg-g s2"><label>備考</label><input type="text" id="pe-note" placeholder="晴れ・アブラムシ防除"/></div>
+      </div>
+      <div style="padding:0 0 16px;display:flex;gap:9px;">
+        <button class="bp" onclick="savePestEdit()" style="flex:1;background:#92400e;">✓ 保存する</button>
+        <button class="bs" onclick="closePestEditModal()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 収穫記録 編集モーダル -->
+<div class="cust-modal-overlay hidden" id="hrvEditModal" onclick="if(event.target===this)closeHrvEditModal()">
+  <div class="cust-modal-box">
+    <div class="cust-modal-hd" style="background:#166534;">
+      <div class="cust-modal-hd-title">📦 収穫記録を編集</div>
+      <button class="cust-modal-close" onclick="closeHrvEditModal()">✕</button>
+    </div>
+    <div style="padding:16px 18px;">
+      <div class="fg">
+        <div class="fg-g"><label>日付 *</label><input type="date" id="he-date"/></div>
+        <div class="fg-g"><label>収穫量 *</label>
+          <div style="display:flex;gap:6px;">
+            <input type="number" id="he-qty" min="0" step="0.1" style="flex:1;">
+            <select id="he-unit" style="width:60px;"><option value="kg">kg</option><option value="袋">袋</option><option value="t">t</option><option value="俵">俵</option></select>
+          </div>
+        </div>
+        <div class="fg-g"><label>担当者</label><input type="text" id="he-person" placeholder="山田"/></div>
+        <div class="fg-g s2"><label>備考</label><input type="text" id="he-note" placeholder="品質A・天候良好"/></div>
+      </div>
+      <div style="padding:0 0 16px;display:flex;gap:9px;">
+        <button class="bp" onclick="saveHrvEdit()" style="flex:1;background:#166534;">✓ 保存する</button>
+        <button class="bs" onclick="closeHrvEditModal()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ホーム画面追加バナー（スマホのみ表示） -->
 <div id="addToHomeBanner">
   <div class="ath-inner">
@@ -1394,15 +1485,19 @@ td{padding:7px 10px;vertical-align:middle;}
   <div class="bn-inner">
     <button class="bn-item act" data-page="dashboard" onclick="navigateTo('dashboard')">
       <span class="bn-icon">📊</span>
-      <span>ダッシュボード</span>
+      <span>ホーム</span>
     </button>
     <button class="bn-item rec-btn" data-page="fields" onclick="navigateTo('fields')">
       <span class="bn-icon">🗺</span>
-      <span>圃場・防除</span>
+      <span>圃場</span>
     </button>
     <button class="bn-item" data-page="transactions" onclick="navigateTo('transactions')">
       <span class="bn-icon">📒</span>
       <span>取引</span>
+    </button>
+    <button class="bn-item" data-page="customers" onclick="navigateTo('customers')">
+      <span class="bn-icon">👥</span>
+      <span>得意先</span>
     </button>
     <button class="bn-item" data-page="matrix" onclick="navigateTo('matrix')">
       <span class="bn-icon">📅</span>
@@ -1463,6 +1558,7 @@ td{padding:7px 10px;vertical-align:middle;}
           <div class="fg-g"><label>日付 *</label><input type="date" id="qm-tx-date"></div>
           <div class="fg-g"><label>勘定科目 *</label><select id="qm-tx-acct"><option value="">選択してください</option></select></div>
           <div class="fg-g"><label>金額（円） *</label><input type="number" id="qm-tx-amount" placeholder="例：50000" min="0" inputmode="numeric"></div>
+          <div class="fg-g"><label>得意先</label><select id="qm-tx-cust"><option value="">— 選択（任意）—</option></select></div>
           <div class="fg-g"><label>品目</label>
             <div style="display:flex;gap:8px;">
               <button type="button" class="ct" id="qmt-rice" onclick="togCropQm('rice')" style="flex:1;justify-content:center;min-height:44px;">🌾 米</button>
@@ -2448,7 +2544,9 @@ function renderFieldTimeline(fieldId){
           <div class="tl-sub">${[item.dilute,item.amount].filter(Boolean).join(' / ')}</div>
           ${item.note?`<div class="tl-sub">${item.note}</div>`:''}
           ${item.person?`<div class="tl-sub">担当：${item.person}</div>`:''}
-          <div class="tl-badge-row">${txBadge}<button onclick="delPest('${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--tl);padding:0;">🗑 削除</button></div>
+          <div class="tl-badge-row">${txBadge}
+            <button onclick="openPestEdit('${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gm);padding:0;">✏️ 編集</button>
+            <button onclick="delPest('${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--tl);padding:0;">🗑 削除</button></div>
         </div>
       </div>`;
     }else{
@@ -2461,11 +2559,68 @@ function renderFieldTimeline(fieldId){
           <div class="tl-title" style="color:var(--gm);">${item.qty.toLocaleString()}${item.unit}</div>
           ${item.note?`<div class="tl-sub">${item.note}</div>`:''}
           ${item.person?`<div class="tl-sub">担当：${item.person}</div>`:''}
-          <div class="tl-badge-row">${txBadge}<button onclick="delHarvest('${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--tl);padding:0;">🗑 削除</button></div>
+          <div class="tl-badge-row">${txBadge}
+            <button onclick="openHrvEdit('${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gm);padding:0;">✏️ 編集</button>
+            <button onclick="delHarvest('${item.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--tl);padding:0;">🗑 削除</button></div>
         </div>
       </div>`;
     }
   }).join('');
+}
+
+// ─── 防除記録 編集 ───
+let editingPestId=null;
+function openPestEdit(id){
+  const p=pestRecords.find(x=>x.id===id);if(!p)return;
+  editingPestId=id;
+  const ev=(eid,v)=>{const e=document.getElementById(eid);if(e)e.value=v||'';};
+  ev('pe-date',p.date);ev('pe-chem',p.chem);ev('pe-dilute',p.dilute);
+  ev('pe-amount',p.amount);ev('pe-person',p.person);ev('pe-note',p.note);
+  document.getElementById('pestEditModal').classList.remove('hidden');
+}
+function closePestEditModal(){document.getElementById('pestEditModal').classList.add('hidden');editingPestId=null;}
+function savePestEdit(){
+  const p=pestRecords.find(x=>x.id===editingPestId);if(!p)return;
+  const chem=document.getElementById('pe-chem').value.trim();
+  if(!chem){toast('⚠ 薬剤名は必須です',1);return;}
+  p.date=document.getElementById('pe-date').value||p.date;
+  p.chem=chem;
+  p.dilute=document.getElementById('pe-dilute').value.trim();
+  p.amount=document.getElementById('pe-amount').value.trim();
+  p.person=document.getElementById('pe-person').value.trim();
+  p.note=document.getElementById('pe-note').value.trim();
+  saveData();
+  closePestEditModal();
+  if(currentDetailFieldId)renderFieldTimeline(currentDetailFieldId);
+  renderFieldGrid();
+  toast(`✓ 防除記録を更新しました`);
+}
+
+// ─── 収穫記録 編集 ───
+let editingHrvId=null;
+function openHrvEdit(id){
+  const h=harvests.find(x=>x.id===id);if(!h)return;
+  editingHrvId=id;
+  const ev=(eid,v)=>{const e=document.getElementById(eid);if(e)e.value=v||'';};
+  ev('he-date',h.date);ev('he-qty',h.qty);ev('he-person',h.person);ev('he-note',h.note);
+  const unitEl=document.getElementById('he-unit');if(unitEl)unitEl.value=h.unit||'kg';
+  document.getElementById('hrvEditModal').classList.remove('hidden');
+}
+function closeHrvEditModal(){document.getElementById('hrvEditModal').classList.add('hidden');editingHrvId=null;}
+function saveHrvEdit(){
+  const h=harvests.find(x=>x.id===editingHrvId);if(!h)return;
+  const qty=parseFloat(document.getElementById('he-qty').value);
+  if(!qty){toast('⚠ 収穫量は必須です',1);return;}
+  h.date=document.getElementById('he-date').value||h.date;
+  h.qty=qty;
+  h.unit=document.getElementById('he-unit').value||'kg';
+  h.person=document.getElementById('he-person').value.trim();
+  h.note=document.getElementById('he-note').value.trim();
+  saveData();
+  closeHrvEditModal();
+  if(currentDetailFieldId)renderFieldTimeline(currentDetailFieldId);
+  renderFieldGrid();renderFieldKPI();renderFieldProfitTable();
+  toast(`✓ 収穫記録を更新しました`);
 }
 
 // ─── Add Pest Record ───
@@ -3084,6 +3239,14 @@ function populateQmSelects(){
     getAccts(curType).forEach(a=>qmAcct.innerHTML+=`<option value="${a.id}">${a.name}</option>`);
     if(cur)qmAcct.value=cur;
   }
+  // 得意先
+  const qmCust=document.getElementById('qm-tx-cust');
+  if(qmCust){
+    const cur=qmCust.value;
+    qmCust.innerHTML='<option value="">— 選択（任意）—</option>';
+    customers.filter(c=>c.status!=='取引停止').forEach(c=>qmCust.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
+    if(cur)qmCust.value=cur;
+  }
   // 圃場
   ['qm-p-fieldId','qm-h-fieldId'].forEach(selId=>{
     const sel=document.getElementById(selId);
@@ -3134,10 +3297,14 @@ function quickAddTx(){
   const acct=document.getElementById('qm-tx-acct').value;
   const amt=parseFloat(document.getElementById('qm-tx-amount').value);
   if(!dt||!acct||!amt){toast('⚠ 日付・勘定科目・金額は必須です',1);return;}
+  const custRaw=document.getElementById('qm-tx-cust')?.value;
+  const custId=custRaw?parseInt(custRaw):null;
   const tx={id:nTx++,type:qmTxType,date:dt,acct,amount:amt,
     crop:document.getElementById('qm-tx-crop').value,
-    custId:null,desc:document.getElementById('qm-tx-desc').value.trim()};
-  transactions.unshift(tx);saveData();
+    custId,desc:document.getElementById('qm-tx-desc').value.trim()};
+  transactions.unshift(tx);
+  if(custId)autoUpdateLastDate(custId,dt);
+  saveData();
   closeQuickModal();
   // clear
   ['qm-tx-amount','qm-tx-desc'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
