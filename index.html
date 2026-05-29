@@ -374,8 +374,27 @@ td{padding:7px 10px;vertical-align:middle;}
 .cust-modal-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;}
 .cust-modal-close:hover{color:#fff;}
 
-/* ─── Dashboard alert ─── */
-.dash-alert{border-radius:11px;border:1.5px solid #fbbf24;background:#fffbeb;padding:13px 16px;margin-bottom:14px;}
+/* ─── ドリルダウンパネル（ダッシュボード内） ─── */
+.dash-drill{background:#fff;border-radius:12px;border:1px solid var(--bdr);overflow:hidden;margin-top:16px;}
+.dash-drill-hd{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);}
+.dash-drill-title{font-size:13px;font-weight:700;color:var(--gd);display:flex;align-items:center;gap:7px;}
+.dash-drill-close{background:none;border:none;color:var(--tl);cursor:pointer;font-size:17px;line-height:1;padding:2px 5px;border-radius:5px;}
+.dash-drill-close:hover{background:var(--cd);}
+
+/* クリック可能カード */
+.kc.clickable{cursor:pointer;}
+.kc.clickable:hover{box-shadow:0 6px 22px rgba(0,0,0,.12);transform:translateY(-2px);}
+.kc.clickable.active-drill{outline:2px solid var(--ga);outline-offset:2px;}
+
+/* 当月バッジ */
+.month-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:#e0f0e8;color:var(--gm);margin-left:5px;}
+.pl-r.month{opacity:.7;font-size:11px;}
+.pl-r.month .v{font-size:12px;}
+
+/* 収支カード クリック可能 */
+.crop-pl.clickable{cursor:pointer;transition:box-shadow .18s,transform .16s;}
+.crop-pl.clickable:hover{box-shadow:0 6px 22px rgba(0,0,0,.1);transform:translateY(-1px);}
+.crop-pl.clickable.active-drill{outline:2px solid var(--ga);outline-offset:2px;}
 .da-title{font-size:12px;font-weight:700;color:#92400e;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
 .da-row{display:flex;align-items:center;gap:9px;padding:4px 0;border-bottom:1px dashed #fde68a;font-size:11.5px;color:var(--tm);}
 .da-row:last-child{border-bottom:none;}
@@ -863,38 +882,127 @@ td{padding:7px 10px;vertical-align:middle;}
     <div id="dashAlertWrap" style="margin-bottom:14px;"></div>
     <div class="sl">顧客指標</div>
     <div class="g4">
-      <div class="kc kg"><div class="ki-icon">👥</div><div class="kl">取引先数</div><div class="kv" id="kpi-cust">0</div><div class="ks" id="kpi-cust-s">—</div></div>
-      <div class="kc ka"><div class="ki-icon">📦</div><div class="kl">アクティブ取引先</div><div class="kv" id="kpi-active">0</div><div class="ks">件</div></div>
-      <div class="kc kb"><div class="ki-icon">⭐</div><div class="kl">重要顧客数</div><div class="kv" id="kpi-vip">0</div><div class="ks">VIP・優良顧客</div></div>
-      <div class="kc kr"><div class="ki-icon">🔔</div><div class="kl">要フォロー</div><div class="kv" id="kpi-follow">0</div><div class="ks">アクション必要</div></div>
+      <div class="kc kg clickable" id="kpi-cust-card" onclick="dashDrill('customers-all')">
+        <div class="ki-icon">👥</div><div class="kl">取引先数</div><div class="kv" id="kpi-cust">0</div><div class="ks" id="kpi-cust-s">—</div></div>
+      <div class="kc ka clickable" id="kpi-active-card" onclick="dashDrill('customers-active')">
+        <div class="ki-icon">📦</div><div class="kl">アクティブ取引先</div><div class="kv" id="kpi-active">0</div><div class="ks">件</div></div>
+      <div class="kc kb clickable" id="kpi-vip-card" onclick="dashDrill('customers-vip')">
+        <div class="ki-icon">⭐</div><div class="kl">重要顧客数</div><div class="kv" id="kpi-vip">0</div><div class="ks">VIP・優良顧客</div></div>
+      <div class="kc kr clickable" id="kpi-follow-card" onclick="dashDrill('customers-follow')">
+        <div class="ki-icon">🔔</div><div class="kl">要フォロー</div><div class="kv" id="kpi-follow">0</div><div class="ks">アクション必要</div></div>
     </div>
+
     <div class="sl">全体収支</div>
     <div class="g3">
-      <div class="kc ki"><div class="ki-icon">📈</div><div class="kl">収入合計</div><div class="kv" id="ps-inc">¥0</div><div class="ks" id="ps-inc-s">—件</div></div>
-      <div class="kc ko"><div class="ki-icon">📉</div><div class="kl">経費合計</div><div class="kv" id="ps-exp">¥0</div><div class="ks" id="ps-exp-s">—件</div></div>
-      <div class="kc" id="pcard"><div class="ki-icon">💰</div><div class="kl">収支（利益）</div><div class="kv" id="ps-profit">¥0</div><div class="pf">収入 − 経費 ＝ 収支</div></div>
+      <div class="kc ki clickable" id="ps-inc-card" onclick="dashDrill('tx-income')">
+        <div class="ki-icon">📈</div>
+        <div class="kl">収入合計</div>
+        <div class="kv" id="ps-inc">¥0</div>
+        <div class="ks" id="ps-inc-s">—件</div>
+        <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bdr);">
+          <div style="font-size:10px;color:var(--tl);">当月 <span class="month-badge" id="current-month-label"></span></div>
+          <div class="mono" style="font-size:13px;font-weight:700;color:var(--inc);" id="ps-inc-month">¥0</div>
+        </div>
+      </div>
+      <div class="kc ko clickable" id="ps-exp-card" onclick="dashDrill('tx-expense')">
+        <div class="ki-icon">📉</div>
+        <div class="kl">経費合計</div>
+        <div class="kv" id="ps-exp">¥0</div>
+        <div class="ks" id="ps-exp-s">—件</div>
+        <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bdr);">
+          <div style="font-size:10px;color:var(--tl);">当月</div>
+          <div class="mono" style="font-size:13px;font-weight:700;color:var(--orange);" id="ps-exp-month">¥0</div>
+        </div>
+      </div>
+      <div class="kc clickable" id="pcard" onclick="dashDrill('tx-all')">
+        <div class="ki-icon">💰</div>
+        <div class="kl">収支（利益）</div>
+        <div class="kv" id="ps-profit">¥0</div>
+        <div class="pf">収入 − 経費 ＝ 収支</div>
+        <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--bdr);">
+          <div style="font-size:10px;color:var(--tl);">当月収支</div>
+          <div class="mono" style="font-size:13px;font-weight:700;" id="ps-profit-month">¥0</div>
+        </div>
+      </div>
     </div>
+
     <div class="sl">品目別収支</div>
     <div class="g2">
-      <div class="crop-pl">
+      <div class="crop-pl clickable" id="rice-pl-card" onclick="dashDrill('tx-rice')">
         <div class="crop-pl-hd rice"><span style="font-size:18px;">🌾</span><div><div class="crop-pl-title rice">米 収支</div><div style="font-size:10px;color:var(--rice);margin-top:1px;" id="rice-phase-label">—</div></div></div>
         <div class="crop-pl-body">
-          <div class="pl-r"><span>収入</span><span class="v" style="color:var(--inc);" id="rice-inc">¥0</span></div>
-          <div class="pl-r"><span>経費</span><span class="v" style="color:var(--orange);" id="rice-exp">¥0</span></div>
+          <div class="pl-r"><span>収入（累計）</span><span class="v" style="color:var(--inc);" id="rice-inc">¥0</span></div>
+          <div class="pl-r"><span>経費（累計）</span><span class="v" style="color:var(--orange);" id="rice-exp">¥0</span></div>
+          <div class="pl-r month" style="color:var(--tl);">
+            <span>当月収入</span><span class="v mono" style="color:var(--inc);font-size:12px;" id="rice-inc-month">¥0</span>
+          </div>
+          <div class="pl-r month" style="color:var(--tl);">
+            <span>当月経費</span><span class="v mono" style="color:var(--orange);font-size:12px;" id="rice-exp-month">¥0</span>
+          </div>
           <hr class="pl-div">
           <div class="pl-tot"><span>収支</span><span id="rice-profit" class="vp">¥0</span></div>
           <div class="pb-wrap"><div class="pb-lbl"><span>利益率</span><span id="rice-pct" class="mono" style="color:var(--rice-d);">—</span></div><div class="pb-track rice"><div class="pb-fill rice" id="rice-bar" style="width:0%"></div></div></div>
+          <div style="margin-top:8px;font-size:10px;color:var(--tl);">タップして米の取引一覧を表示 →</div>
         </div>
       </div>
-      <div class="crop-pl">
+      <div class="crop-pl clickable" id="ume-pl-card" onclick="dashDrill('tx-ume')">
         <div class="crop-pl-hd ume"><span style="font-size:18px;">🌸</span><div><div class="crop-pl-title ume">梅 収支</div><div style="font-size:10px;color:var(--ume);margin-top:1px;" id="ume-phase-label">—</div></div></div>
         <div class="crop-pl-body">
-          <div class="pl-r"><span>収入</span><span class="v" style="color:var(--inc);" id="ume-inc">¥0</span></div>
-          <div class="pl-r"><span>経費</span><span class="v" style="color:var(--orange);" id="ume-exp">¥0</span></div>
+          <div class="pl-r"><span>収入（累計）</span><span class="v" style="color:var(--inc);" id="ume-inc">¥0</span></div>
+          <div class="pl-r"><span>経費（累計）</span><span class="v" style="color:var(--orange);" id="ume-exp">¥0</span></div>
+          <div class="pl-r month" style="color:var(--tl);">
+            <span>当月収入</span><span class="v mono" style="color:var(--inc);font-size:12px;" id="ume-inc-month">¥0</span>
+          </div>
+          <div class="pl-r month" style="color:var(--tl);">
+            <span>当月経費</span><span class="v mono" style="color:var(--orange);font-size:12px;" id="ume-exp-month">¥0</span>
+          </div>
           <hr class="pl-div">
           <div class="pl-tot"><span>収支</span><span id="ume-profit" class="vp">¥0</span></div>
           <div class="pb-wrap"><div class="pb-lbl"><span>利益率</span><span id="ume-pct" class="mono" style="color:var(--ume-d);">—</span></div><div class="pb-track ume"><div class="pb-fill ume" id="ume-bar" style="width:0%"></div></div></div>
+          <div style="margin-top:8px;font-size:10px;color:var(--tl);">タップして梅の取引一覧を表示 →</div>
         </div>
+      </div>
+    </div>
+
+    <!-- ドリルダウンパネル（ダッシュボード内） -->
+    <div class="dash-drill" id="dashDrillPanel" style="display:none;">
+      <div class="dash-drill-hd">
+        <div class="dash-drill-title" id="dashDrillTitle">取引明細</div>
+        <button class="dash-drill-close" onclick="closeDashDrill()">✕ 閉じる</button>
+      </div>
+      <div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--bdr);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="rc" id="dashDrillCount">—件</div>
+        <button class="bs" onclick="navigateTo('transactions')" style="font-size:11px;padding:4px 11px;margin-left:auto;">取引管理で開く →</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>日付</th><th>種類</th><th>勘定科目</th><th>品目</th><th>金額</th><th>説明</th><th>得意先</th>
+          </tr></thead>
+          <tbody id="dashDrillBody"></tbody>
+        </table>
+        <div class="empty" id="dashDrillEmpty" style="display:none;"><div class="ic">📒</div>該当する取引がありません</div>
+      </div>
+    </div>
+
+    <!-- 顧客ドリルダウンパネル -->
+    <div class="dash-drill" id="dashCustDrillPanel" style="display:none;">
+      <div class="dash-drill-hd">
+        <div class="dash-drill-title" id="dashCustDrillTitle">得意先一覧</div>
+        <button class="dash-drill-close" onclick="closeDashDrill()">✕ 閉じる</button>
+      </div>
+      <div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--bdr);display:flex;gap:8px;align-items:center;">
+        <div class="rc" id="dashCustDrillCount">—件</div>
+        <button class="bs" onclick="navigateTo('customers')" style="font-size:11px;padding:4px 11px;margin-left:auto;">得意先管理で開く →</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>氏名・会社名</th><th>区分</th><th>品目</th><th>連絡先</th><th>最終取引日</th><th>ステータス</th>
+          </tr></thead>
+          <tbody id="dashCustDrillBody"></tbody>
+        </table>
+        <div class="empty" id="dashCustDrillEmpty" style="display:none;"><div class="ic">👥</div>該当する得意先がありません</div>
       </div>
     </div>
     <div class="sl">圃場別収益性</div>
@@ -2254,30 +2362,145 @@ function sumTx(type,crop){
     return true;
   }).reduce((s,t)=>s+t.amount,0);
 }
+function sumTxMonth(type,crop){
+  const ym=new Date().toISOString().slice(0,7);
+  return transactions.filter(t=>{
+    if(!t.date.startsWith(ym))return false;
+    if(type&&t.type!==type)return false;
+    if(crop&&t.crop!==crop&&t.crop!=='both')return false;
+    return true;
+  }).reduce((s,t)=>s+t.amount,0);
+}
 function updateAllKPI(){
+  const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+
+  // 顧客指標
   const vip=customers.filter(c=>c.status==='VIP').length;
   const follow=customers.filter(c=>c.status==='要フォロー').length;
   const active=customers.filter(c=>c.status==='取引中'||c.status==='VIP').length;
-  const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   el('kpi-cust',customers.length); el('kpi-cust-s',`アクティブ${active}社`);
   el('kpi-active',active); el('kpi-vip',vip); el('kpi-follow',follow);
+
+  // 当月ラベル
+  const now=new Date();
+  const mlEl=document.getElementById('current-month-label');
+  if(mlEl)mlEl.textContent=`${now.getFullYear()}年${now.getMonth()+1}月`;
+
+  // 全体収支（累計＋当月）
   const tInc=sumTx('income'),tExp=sumTx('expense'),profit=tInc-tExp;
+  const mInc=sumTxMonth('income'),mExp=sumTxMonth('expense'),mProfit=mInc-mExp;
   el('ps-inc',fmt(tInc)); el('ps-inc-s',`${transactions.filter(t=>t.type==='income').length}件`);
   el('ps-exp',fmt(tExp)); el('ps-exp-s',`${transactions.filter(t=>t.type==='expense').length}件`);
+  el('ps-inc-month', fmt(mInc));
+  el('ps-exp-month', fmt(mExp));
   const pe=document.getElementById('ps-profit');
   if(pe){pe.textContent=(profit<0?'▼ ':'')+fmt(profit);pe.className='kv '+(profit>=0?'kv-pp':'kv-pn');}
+  const pm=document.getElementById('ps-profit-month');
+  if(pm){pm.textContent=(mProfit<0?'▼ ':'')+fmt(mProfit);pm.style.color=mProfit>=0?'var(--gm)':'var(--red)';}
   const pc=document.getElementById('pcard');
-  if(pc)pc.className='kc '+(profit>=0?'kpp':'kpn');
+  if(pc){const base='kc clickable';pc.className=base+' '+(profit>=0?'kpp':'kpn');}
+
+  // 品目別収支（累計＋当月）
   ['rice','ume'].forEach(cr=>{
     const s=sumTx('income',cr),e=sumTx('expense',cr),p=s-e;
+    const ms=sumTxMonth('income',cr),me=sumTxMonth('expense',cr);
     const pct=s>0?Math.max(0,Math.min(100,Math.round(p/s*100))):0;
     el(cr+'-inc',fmt(s)); el(cr+'-exp',fmt(e));
+    el(cr+'-inc-month',fmt(ms)); el(cr+'-exp-month',fmt(me));
     const pe2=document.getElementById(cr+'-profit');
     if(pe2){pe2.textContent=(p<0?'▼ ':'')+fmt(p);pe2.className=p>=0?'vp':'vn';}
     const bar=document.getElementById(cr+'-bar');
     if(bar){bar.style.width=pct+'%';bar.className='pb-fill '+(p<0?'neg':cr);}
     el(cr+'-pct',s>0?pct+'%':'—');
   });
+}
+
+// ════════════════════════════════════════════
+//  DASHBOARD DRILLDOWN
+// ════════════════════════════════════════════
+let activeDrillKey=null;
+
+function dashDrill(key){
+  if(activeDrillKey===key){closeDashDrill();return;}
+  activeDrillKey=key;
+  document.querySelectorAll('.kc.clickable,.crop-pl.clickable').forEach(e=>e.classList.remove('active-drill'));
+  const cardMap={
+    'customers-all':'kpi-cust-card','customers-active':'kpi-active-card',
+    'customers-vip':'kpi-vip-card','customers-follow':'kpi-follow-card',
+    'tx-income':'ps-inc-card','tx-expense':'ps-exp-card','tx-all':'pcard',
+    'tx-rice':'rice-pl-card','tx-ume':'ume-pl-card',
+  };
+  const card=document.getElementById(cardMap[key]);
+  if(card)card.classList.add('active-drill');
+  if(key.startsWith('customers'))showCustDrill(key); else showTxDrill(key);
+  setTimeout(()=>{
+    const panel=document.getElementById(key.startsWith('customers')?'dashCustDrillPanel':'dashDrillPanel');
+    if(panel)panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },80);
+}
+
+function showTxDrill(key){
+  document.getElementById('dashDrillPanel').style.display='block';
+  document.getElementById('dashCustDrillPanel').style.display='none';
+  const titleMap={'tx-income':'📈 収入一覧（全期間）','tx-expense':'📉 経費一覧（全期間）','tx-all':'💰 収支一覧（全期間）','tx-rice':'🌾 米 取引一覧','tx-ume':'🌸 梅 取引一覧'};
+  let list=transactions.slice();
+  if(key==='tx-income')  list=list.filter(t=>t.type==='income');
+  if(key==='tx-expense') list=list.filter(t=>t.type==='expense');
+  if(key==='tx-rice')    list=list.filter(t=>t.crop==='rice'||t.crop==='both');
+  if(key==='tx-ume')     list=list.filter(t=>t.crop==='ume' ||t.crop==='both');
+  list.sort((a,b)=>b.date<a.date?-1:1);
+  document.getElementById('dashDrillTitle').textContent=titleMap[key]||'取引一覧';
+  document.getElementById('dashDrillCount').textContent=`${list.length}件`;
+  document.getElementById('dashDrillEmpty').style.display=list.length?'none':'block';
+  const tb=document.getElementById('dashDrillBody');
+  tb.innerHTML=list.map(t=>{
+    const isInc=t.type==='income';
+    const col=isInc?'var(--inc)':'var(--red)';
+    const ac=acctById(t.acct);
+    return`<tr class="${isInc?'inc-row':'exp-row'}">
+      <td class="mono" style="font-size:10.5px;">${t.date}</td>
+      <td><span class="badge" style="background:${isInc?'var(--inc-l)':'#fee2e2'};color:${col};font-size:9.5px;">${isInc?'＋収入':'－経費'}</span></td>
+      <td style="font-size:11.5px;font-weight:600;">${ac?.name||t.acct||'—'}</td>
+      <td>${cropBadge(t.crop)}</td>
+      <td class="mono" style="font-size:12px;font-weight:700;color:${col};">${isInc?'+':'-'}¥${t.amount.toLocaleString()}</td>
+      <td style="font-size:11px;color:var(--tm);">${t.desc||'—'}</td>
+      <td style="font-size:11px;color:var(--gm);">${t.custId?custName(t.custId):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showCustDrill(key){
+  document.getElementById('dashCustDrillPanel').style.display='block';
+  document.getElementById('dashDrillPanel').style.display='none';
+  const filterMap={
+    'customers-all':    {fn:_=>true,           title:'👥 得意先一覧（全件）'},
+    'customers-active': {fn:c=>c.status==='取引中'||c.status==='VIP', title:'📦 アクティブ取引先'},
+    'customers-vip':    {fn:c=>c.status==='VIP', title:'⭐ 重要顧客（VIP）'},
+    'customers-follow': {fn:c=>c.status==='要フォロー', title:'🔔 要フォロー顧客'},
+  };
+  const{fn,title}=filterMap[key]||{fn:_=>true,title:'得意先一覧'};
+  const list=customers.filter(fn).sort((a,b)=>a.name<b.name?-1:1);
+  document.getElementById('dashCustDrillTitle').textContent=title;
+  document.getElementById('dashCustDrillCount').textContent=`${list.length}件`;
+  document.getElementById('dashCustDrillEmpty').style.display=list.length?'none':'block';
+  const tb=document.getElementById('dashCustDrillBody');
+  tb.innerHTML=list.map(c=>`<tr>
+    <td><div style="font-weight:600;color:var(--gd);font-size:12.5px;">${c.name}</div>${c.note?`<div style="font-size:10px;color:var(--tl);">${c.note}</div>`:''}</td>
+    <td>${tBadge(c.type)}</td>
+    <td>${cropBadge(c.crop)}</td>
+    <td style="font-size:11px;">${c.tel||'—'}</td>
+    <td class="mono" style="font-size:10.5px;">${c.lastDate||'—'}</td>
+    <td>${sBadge(c.status)}</td>
+  </tr>`).join('');
+}
+
+function closeDashDrill(){
+  activeDrillKey=null;
+  const dp=document.getElementById('dashDrillPanel');
+  const cp=document.getElementById('dashCustDrillPanel');
+  if(dp)dp.style.display='none';
+  if(cp)cp.style.display='none';
+  document.querySelectorAll('.kc.clickable,.crop-pl.clickable').forEach(e=>e.classList.remove('active-drill'));
 }
 
 // ════════════════════════════════════════════
