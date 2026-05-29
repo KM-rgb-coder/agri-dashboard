@@ -374,7 +374,23 @@ td{padding:7px 10px;vertical-align:middle;}
 .cust-modal-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;}
 .cust-modal-close:hover{color:#fff;}
 
-/* ─── ドリルダウンパネル（ダッシュボード内） ─── */
+/* ─── 勘定科目 ツールチップ ─── */
+.acct-select-wrap{position:relative;}
+.acct-tooltip{
+  display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:500;
+  background:var(--gd);color:#fff;
+  padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6;
+  max-width:280px;white-space:normal;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  pointer-events:none;
+}
+.acct-tooltip::before{
+  content:'';position:absolute;top:-6px;left:16px;
+  border:6px solid transparent;border-top:none;
+  border-bottom-color:var(--gd);
+}
+.acct-select-wrap:focus-within .acct-tooltip,
+.acct-select-wrap .acct-tooltip.show{display:block;}
 .dash-drill{background:#fff;border-radius:12px;border:1px solid var(--bdr);overflow:hidden;margin-top:16px;}
 .dash-drill-hd{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);}
 .dash-drill-title{font-size:13px;font-weight:700;color:var(--gd);display:flex;align-items:center;gap:7px;}
@@ -2971,12 +2987,14 @@ function setTxType(type){
   document.getElementById('txTypeExp').className='type-btn exp'+(type==='expense'?' sel':'');
   document.getElementById('txSubmitBtn').style.background=type==='income'?'var(--inc)':'var(--red)';
   populateAcctSelect();
+  initAllAcctTooltips();
 }
 function populateAcctSelect(){
   const sel=document.getElementById('tx-acct');if(!sel)return;
   const cur=sel.value;sel.innerHTML='<option value="">選択</option>';
   getAccts(currentTxType).forEach(a=>sel.innerHTML+=`<option value="${a.id}">${a.name}</option>`);
   if(cur)sel.value=cur;
+  initAllAcctTooltips();
 }
 function populateCustSelect(){
   const sel=document.getElementById('tx-cust');if(!sel)return;
@@ -3388,8 +3406,40 @@ function toast(msg,warn){
 }
 
 // ════════════════════════════════════════════
-//  MOBILE UI
+//  勘定科目ツールチップ
 // ════════════════════════════════════════════
+function initAcctTooltip(selId){
+  const sel=document.getElementById(selId);
+  if(!sel||sel.dataset.tooltipInit)return;
+  sel.dataset.tooltipInit='1';
+
+  // ラッパーをセレクトの外に作る
+  const wrap=document.createElement('div');
+  wrap.className='acct-select-wrap';
+  sel.parentNode.insertBefore(wrap,sel);
+  wrap.appendChild(sel);
+
+  const tip=document.createElement('div');
+  tip.className='acct-tooltip';
+  wrap.appendChild(tip);
+
+  function updateTip(){
+    const acct=accounts.find(a=>a.id===sel.value);
+    if(acct&&acct.desc){
+      tip.innerHTML=`<strong>${acct.name}</strong><br>${acct.desc}`;
+      tip.classList.add('show');
+    }else{
+      tip.classList.remove('show');
+    }
+  }
+  sel.addEventListener('change',updateTip);
+  sel.addEventListener('focus', updateTip);
+  sel.addEventListener('blur', ()=>setTimeout(()=>tip.classList.remove('show'),200));
+}
+
+function initAllAcctTooltips(){
+  ['tx-acct','qm-tx-acct'].forEach(id=>initAcctTooltip(id));
+}
 
 // ── ボトムナビ同期 ──
 function syncBottomNav(name){
@@ -3460,6 +3510,7 @@ function populateQmSelects(){
     qmAcct.innerHTML='<option value="">選択してください</option>';
     getAccts(curType).forEach(a=>qmAcct.innerHTML+=`<option value="${a.id}">${a.name}</option>`);
     if(cur)qmAcct.value=cur;
+    initAllAcctTooltips();
   }
   // 得意先
   const qmCust=document.getElementById('qm-tx-cust');
